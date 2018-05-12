@@ -7,7 +7,7 @@ def calWeight(x):
     abs(np.log(x[0]/(x[5])))*\
     np.log(1+N/x[4])
     return float(w)
-df=pd.read_excel("RawData.xlsx")
+df=pd.read_excel("RawData.xlsx") #“RawData.xlsx" is the comparison file
 N=len(df)
 df=df.drop_duplicates()
 df['ID']=df[['Disease','Phenotype']].apply(lambda x:'|'.join([str(i) for i in x]),axis=1)
