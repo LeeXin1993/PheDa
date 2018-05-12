@@ -1,0 +1,34 @@
+import pandas as pd
+import numpy as np
+import math
+def calWeight(x):
+    w=np.log(N*math.pow((x[0]*x[3]-x[1]*x[2]),2)/(x[4]*(x[2]+x[3])*x[5]*(x[1]+x[3])))*\
+    (1/abs(np.log(x[1]*x[2]+1e-5)))*\
+    abs(np.log(x[0]/(x[5])))*\
+    np.log(1+N/x[4])
+    return float(w)
+df=pd.read_excel("RawData.xlsx")
+N=len(df)
+df=df.drop_duplicates()
+df['ID']=df[['Disease','Phenotype']].apply(lambda x:'|'.join([str(i) for i in x]),axis=1)
+DP_count=df[['ID','pmid']].groupby('ID').agg(lambda x:len(set(x)))
+df['DP_count']=df.ID.map(DP_count.pmid.to_dict())
+disease_count=df[['Disease','pmid']].groupby('Disease').agg(lambda x:len(set(x))).pmid.to_dict()
+df['D_count']=df.Disease.map(disease_count)
+phenotype_count=df[['Phenotype','pmid']].groupby('Phenotype').agg(lambda x:len(set(x))).pmid.to_dict()
+df['P_count']=df.Phenotype.map(phenotype_count)
+df['NotD_P_count']=df.P_count-df.DP_count
+df['D_NotP_count']=df.D_count-df.DP_count
+df['NotD_NotP_count']=list(map(lambda x:N-sum(list(x)),df[['DP_count','NotD_P_count','D_NotP_count']].values))
+df['weight']=list(map(lambda x:calWeight(list(x)),df[['DP_count','NotD_P_count','D_NotP_count','NotD_NotP_count','P_count','D_count']].values))
+df.to_csv("Disease_Phenotype_pmid_count.txt",header=True,index=False,sep='\t')
+f=open("Disease_Phenotype_pmid_count.txt",'r',encoding='utf-8')
+lines=f.readlines()
+f.close()
+f=open("Disease_Phenotype_pmid_count1.txt",'w',encoding='utf-8')
+f.write(lines[0])
+for line in lines[1:]:
+    DP_count,D_count,P_count,NotD_P_count,D_NotP_count,NotD_NotP_count=[int(i) for i in line.split('\t')[4:10]]
+    weight=calWeight([DP_count,NotD_P_count,D_NotP_count,NotD_NotP_count,P_count,D_count])
+    f.write('\t'.join(line.split('\t')[:-1])+'\t'+str(weight)+'\n')
+f.close()
